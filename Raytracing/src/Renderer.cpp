@@ -17,12 +17,12 @@ double hit_sphere(const point3& center, double radius, const ray& r) {
     }
 }
 
-color ray_color(const ray& r) {
-    auto t = hit_sphere(point3(0, 0, -1), 0.5, r);
-    if (t > 0.0) {
-        vec3 N = unit_vector(r.at(t) - vec3(0, 0, -1));
-        return 0.5 * color(N.x() + 1, N.y() + 1, N.z() + 1);
+color ray_color(const ray& r, const hittable& world) {
+    hit_record rec;
+    if (world.hit(r, interval(0.001, infinity), rec)) {
+        return 0.5 * (rec.normal + color(1, 1, 1));
     }
+
     vec3 unit_direction = unit_vector(r.direction());
     auto a = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
@@ -35,7 +35,7 @@ vec3 sample_square() {
     return vec3(random_double() - 0.5, random_double() - 0.5, 0);
 }
 
-void Renderer::Render(const Camera& camera) {
+void Renderer::Render(const Camera& camera, const hittable& world) {
     glm::vec3 cameraPosition = camera.GetPosition();
 
     // Convert glm::vec3 to your vec3 type
@@ -51,7 +51,7 @@ void Renderer::Render(const Camera& camera) {
 
                 vec3 myRayDir = unit_vector(rayDir + offset); // Normalize the direction
                 ray cameraRay(myCameraPosition, myRayDir);
-                pixel_color += ray_color(cameraRay);
+                pixel_color += ray_color(cameraRay,world);
             }
 
             // Average the color and apply gamma correction
@@ -66,9 +66,9 @@ void Renderer::Render(const Camera& camera) {
 
 
 
-uint32_t Renderer::TraceRay(const ray& ray) {
+uint32_t Renderer::TraceRay(const ray& ray, const hittable& world) {
     // Get the color from the ray
-    color pixel_color = ray_color(ray);
+    color pixel_color = ray_color(ray, world);
 
     // Convert the color to RGBA format
     return write_color(pixel_color);

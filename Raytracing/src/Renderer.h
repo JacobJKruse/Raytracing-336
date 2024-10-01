@@ -5,18 +5,20 @@
 #include "rtweekend.h"
 
 #include "Camera.h"
-
+#include "hittable.h"
+#include "hittable_list.h"
+#include "sphere.h"
 class Renderer
 {
 public:
-    void Render(const Camera& camera);
+    void Render(const Camera& camera, const hittable& world);
     void OnResize(uint32_t width, uint32_t height);
     std::shared_ptr<Walnut::Image> GetFinalImage() const { return FinalImg; };
 
 
 
 private:
-    uint32_t TraceRay(const ray& ray);
+    uint32_t TraceRay(const ray& ray, const hittable& world);
     int samples_per_pixel = 10;
     double pixel_samples_scale = 1.0 / samples_per_pixel;
     // Color scale factor for a sum of pixel samples

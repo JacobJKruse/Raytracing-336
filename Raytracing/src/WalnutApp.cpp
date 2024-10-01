@@ -7,13 +7,17 @@
 #include "Renderer.h"
 #include "Camera.h"
 #include <glm/gtc/type_ptr.hpp>
-
+#include "hittable.h"
+#include "hittable_list.h"
+#include "sphere.h"
+#include "rtweekend.h"
 using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
 {
 public:
 	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) {}
+	bool click = false;
 	virtual void OnUpdate(float ts) override
 	{
 		camera.OnUpdate(ts);
@@ -26,6 +30,7 @@ public:
 		if (ImGui::Button("Render")) {
 			Render();
 			SaveRenderImage();
+			click = true;
 
 		}
 		ImGui::End();
@@ -42,8 +47,8 @@ public:
 
 		ImGui::End();
 		ImGui::PopStyleVar();
-
-		Render();
+		if(click)
+			Render();
 
 	}
 
@@ -51,10 +56,14 @@ public:
 	void Render()
 	{
 		Timer timer;
+		hittable_list world;
+
+		world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
+		world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
 
 		renderer.OnResize(vpWidth, vpHeight);
 		camera.OnResize(vpWidth, vpHeight);
-		renderer.Render(camera);
+		renderer.Render(camera, world);
 
 
 		RenderTime = timer.ElapsedMillis();
