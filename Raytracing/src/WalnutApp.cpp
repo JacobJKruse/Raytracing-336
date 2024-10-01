@@ -1,38 +1,92 @@
+#pragma once
 #include "Walnut/Application.h"
 #include "Walnut/EntryPoint.h"
 
 #include "Walnut/Image.h"
+#include "Walnut/Timer.h"
+#include "Renderer.h"
+#include "Camera.h"
+#include <glm/gtc/type_ptr.hpp>
+
+using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
 {
 public:
+	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) {}
+	virtual void OnUpdate(float ts) override
+	{
+		camera.OnUpdate(ts);
+	}
+
 	virtual void OnUIRender() override
 	{
-		ImGui::Begin("Hello");
-		ImGui::Button("Button");
-		ImGui::End();
+		ImGui::Begin("Settings");
+		ImGui::Text("Last Render Time %.3fms", RenderTime);
+		if (ImGui::Button("Render")) {
+			Render();
+			SaveRenderImage();
 
-		ImGui::ShowDemoWindow();
+		}
+		ImGui::End();
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("Viewport");
+
+		vpWidth = ImGui::GetContentRegionAvail().x;
+		vpHeight = ImGui::GetContentRegionAvail().y;
+
+		auto img = renderer.GetFinalImage();
+		if (img) {
+			ImGui::Image(img->GetDescriptorSet(), { (float)img->GetWidth(),(float)img->GetHeight() }, ImVec2(0, 1), ImVec2(1, 0));
+		}
+
+		ImGui::End();
+		ImGui::PopStyleVar();
+
+		Render();
+
 	}
+
+
+	void Render()
+	{
+		Timer timer;
+
+		renderer.OnResize(vpWidth, vpHeight);
+		camera.OnResize(vpWidth, vpHeight);
+		renderer.Render(camera);
+
+
+		RenderTime = timer.ElapsedMillis();
+	}
+
+	void SaveRenderImage() {
+
+	}
+private:
+	Renderer renderer;
+	uint32_t vpWidth = 0, vpHeight = 0;
+	Camera camera;
+	float RenderTime = 0.0f;
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 {
 	Walnut::ApplicationSpecification spec;
-	spec.Name = "Walnut Example";
+	spec.Name = "Ray Tracing";
 
 	Walnut::Application* app = new Walnut::Application(spec);
 	app->PushLayer<ExampleLayer>();
 	app->SetMenubarCallback([app]()
-	{
-		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Exit"))
+			if (ImGui::BeginMenu("File"))
 			{
-				app->Close();
+				if (ImGui::MenuItem("Exit"))
+				{
+					app->Close();
+				}
+				ImGui::EndMenu();
 			}
-			ImGui::EndMenu();
-		}
-	});
+		});
 	return app;
 }
