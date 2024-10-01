@@ -8,6 +8,8 @@
 #include "hittable.h"
 #include "hittable_list.h"
 #include "sphere.h"
+#include "material.h"
+
 class Renderer
 {
 public:
@@ -28,7 +30,7 @@ private:
     vec3   pixel_delta_u;        // Offset to pixel to the right
     vec3   pixel_delta_v;        // Offset to pixel below
     int    max_depth = 10;   // Maximum number of ray bounces into scene
-    int samples_per_pixel = 10;
+    int samples_per_pixel = 100;
     double pixel_samples_scale = 1.0 / samples_per_pixel;
 };
 
