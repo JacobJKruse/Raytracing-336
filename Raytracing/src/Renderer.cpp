@@ -17,10 +17,16 @@ double hit_sphere(const point3& center, double radius, const ray& r) {
     }
 }
 
-color ray_color(const ray& r, const hittable& world) {
+color ray_color(const ray& r, int depth, const hittable& world) {
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    if (depth <= 0)
+        return color(0, 0, 0);
+
     hit_record rec;
+
     if (world.hit(r, interval(0.001, infinity), rec)) {
-        return 0.5 * (rec.normal + color(1, 1, 1));
+        vec3 direction = rec.normal + random_unit_vector();
+        return 0.5 * ray_color(ray(rec.p, direction), depth - 1, world);
     }
 
     vec3 unit_direction = unit_vector(r.direction());
@@ -51,12 +57,13 @@ void Renderer::Render(const Camera& camera, const hittable& world) {
 
                 vec3 myRayDir = unit_vector(rayDir + offset); // Normalize the direction
                 ray cameraRay(myCameraPosition, myRayDir);
-                pixel_color += ray_color(cameraRay,world);
+                int    max_depth = 10;   // Maximum number of ray bounces into scene
+                pixel_color += ray_color(cameraRay,max_depth,world);
             }
 
             // Average the color and apply gamma correction
             pixel_color /= samples_per_pixel;
-            // = color(sqrt(pixel_color.x()), sqrt(pixel_color.y()), sqrt(pixel_color.z()));
+            //pixel_color = color(sqrt(pixel_color.x()), sqrt(pixel_color.y()), sqrt(pixel_color.z()));
 
             imgData[x + y * FinalImg->GetWidth()] = write_color(pixel_color);
         }
@@ -68,7 +75,7 @@ void Renderer::Render(const Camera& camera, const hittable& world) {
 
 uint32_t Renderer::TraceRay(const ray& ray, const hittable& world) {
     // Get the color from the ray
-    color pixel_color = ray_color(ray, world);
+    color pixel_color = ray_color(ray,max_depth, world);
 
     // Convert the color to RGBA format
     return write_color(pixel_color);
