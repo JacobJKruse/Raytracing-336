@@ -3,6 +3,7 @@
 #define VEC3_H
 
 #include "rtweekend.h"
+#include <glm/glm.hpp>
 
 class vec3 {
 public:
@@ -147,5 +148,14 @@ inline vec3 random_in_unit_disk() {
             return p;
     }
 }
+
+inline glm::vec3 to_glm(const vec3& v) {
+    return glm::vec3(v.x(), v.y(), v.z());
+}
+
+inline vec3 from_glm(const glm::vec3& v) {
+    return vec3(v.x, v.y, v.z);
+}
+
 
 #endif

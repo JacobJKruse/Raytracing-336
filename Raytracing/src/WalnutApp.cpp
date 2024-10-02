@@ -13,6 +13,7 @@
 #include "hittable_list.h"
 #include "material.h"
 #include "sphere.h"
+#include "Scene.h"
 
 
 
@@ -22,7 +23,9 @@ using namespace Walnut;
 class ExampleLayer : public Walnut::Layer
 {
 public:
-	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) {}
+	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) {
+		m_Scene = create_scene();
+	}
 	bool click = false;
 	virtual void OnUpdate(float ts) override
 	{
@@ -40,6 +43,21 @@ public:
 
 		}
 		ImGui::End();
+
+		ImGui::Begin("Object Properties");
+		for (size_t i = 0; i < m_Scene.object_properties.size(); ++i) {
+			auto& prop = m_Scene.object_properties[i];
+			ImGui::PushID(i);
+
+			ImGui::Text("Object %zu", i);
+			glm::vec3 position = to_glm(prop.position);
+			if (ImGui::DragFloat3("Position", glm::value_ptr(position), 0.1f)) {
+				prop.position = from_glm(position);
+			}
+			ImGui::PopID();
+		}
+		ImGui::End();
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ImGui::Begin("Viewport");
 
@@ -62,21 +80,8 @@ public:
 	void Render()
 	{
 		Timer timer;
-		hittable_list world;
+		hittable_list world = m_Scene.create_hittable_list();
 
-		auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-		auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-		auto material_left = make_shared<dielectric>(1.50);
-		auto material_bubble = make_shared<dielectric>(1.00 / 1.50);
-		auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
-
-		world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-		world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
-		world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-		world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.4, material_bubble));
-		world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
-
-		world = hittable_list(make_shared<bvh_node>(world));
 
 		renderer.OnResize(vpWidth, vpHeight);
 		camera.OnResize(vpWidth, vpHeight);
@@ -94,6 +99,8 @@ private:
 	uint32_t vpWidth = 0, vpHeight = 0;
 	Camera camera;
 	float RenderTime = 0.0f;
+	Scene m_Scene;
+
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)

@@ -58,7 +58,7 @@ public:
         return true;
     }
 
-private:
+public:
     ray center;
     double radius;
     shared_ptr<material> mat;
