@@ -66,6 +66,12 @@ void Renderer::render_tile(Renderer& renderer, const Camera& camera, const hitta
 void Renderer::Render(const Camera& camera, const hittable& world) {
     uint32_t height = FinalImg->GetHeight();
     uint32_t num_threads = std::thread::hardware_concurrency();
+
+    // Ensure at least one thread is used
+    if (num_threads == 0) {
+        num_threads = 1;
+    }
+
     uint32_t rows_per_thread = height / num_threads;
 
     std::vector<std::thread> threads;
@@ -76,13 +82,13 @@ void Renderer::Render(const Camera& camera, const hittable& world) {
         threads.emplace_back(&Renderer::render_tile, this, std::ref(*this), std::ref(camera), std::ref(world), start_y, end_y);
     }
 
-
     for (auto& thread : threads) {
         thread.join();
     }
 
     FinalImg->SetData(imgData);
 }
+
 
 uint32_t Renderer::TraceRay(const ray& ray, const hittable& world) {
     color pixel_color = ray_color(ray, max_depth, world);
