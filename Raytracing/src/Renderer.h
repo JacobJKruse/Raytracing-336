@@ -16,6 +16,8 @@ public:
     void Render(const Camera& camera, const hittable& world);
     void OnResize(uint32_t width, uint32_t height);
     std::shared_ptr<Walnut::Image> GetFinalImage() const { return FinalImg; };
+    int samples_per_pixel = 1;
+    double pixel_samples_scale = 1.0 / samples_per_pixel;
 
 
 
@@ -30,7 +32,5 @@ private:
     vec3   pixel_delta_u;        // Offset to pixel to the right
     vec3   pixel_delta_v;        // Offset to pixel below
     int    max_depth = 10;   // Maximum number of ray bounces into scene
-    int samples_per_pixel = 10;
-    double pixel_samples_scale = 1.0 / samples_per_pixel;
 };
 

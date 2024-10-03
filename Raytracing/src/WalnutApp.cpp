@@ -35,6 +35,9 @@ public:
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
+
+		
+
 		ImGui::Text("Last Render Time %.3fms", RenderTime);
 		if (ImGui::Button("Render")) {
 			Render();
@@ -42,7 +45,17 @@ public:
 			click = true;
 
 		}
+
+		ImGui::Separator();
+
+		ImGui::Text("Rendering Settings");
+		if (ImGui::InputInt("Samples Per Pixel", &renderer.samples_per_pixel)) {
+			renderer.pixel_samples_scale = 1.0 / renderer.samples_per_pixel;
+		}
 		ImGui::End();
+
+		
+
 
 		ImGui::Begin("Object Properties");
 		for (size_t i = 0; i < m_Scene.object_properties.size(); ++i) {
@@ -54,7 +67,15 @@ public:
 			if (ImGui::DragFloat3("Position", glm::value_ptr(position), 0.1f)) {
 				prop.position = from_glm(position);
 			}
+			double updatedRad = prop.radius;
+			if (ImGui::DragScalar("Radius", ImGuiDataType_Double, &updatedRad, 0.1f)) {
+				// Update the radius if it has been changed
+				prop.radius = updatedRad;
+			}
 			ImGui::PopID();
+			
+		
+			
 		}
 		ImGui::End();
 
