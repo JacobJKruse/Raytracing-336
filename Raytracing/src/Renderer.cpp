@@ -1,6 +1,8 @@
+#include <vector>
+#include <thread>
+#include <future>
 #include "Renderer.h"
 #include "Walnut/Random.h"
-
 
 double hit_sphere(const point3& center, double radius, const ray& r) {
     vec3 oc = center - r.origin();
@@ -18,7 +20,6 @@ double hit_sphere(const point3& center, double radius, const ray& r) {
 }
 
 color ray_color(const ray& r, int depth, const hittable& world) {
-    // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
         return color(0, 0, 0);
 
@@ -37,50 +38,54 @@ color ray_color(const ray& r, int depth, const hittable& world) {
     return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
 }
 
-
-
 vec3 sample_square() {
-    // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
     return vec3(random_double() - 0.5, random_double() - 0.5, 0);
 }
 
-void Renderer::Render(const Camera& camera, const hittable& world) {
+void Renderer::render_tile(Renderer& renderer, const Camera& camera, const hittable& world, uint32_t start_y, uint32_t end_y) {
     glm::vec3 cameraPosition = camera.GetPosition();
-
-    // Convert glm::vec3 to your vec3 type
     vec3 myCameraPosition(cameraPosition);
 
-    for (uint32_t y = 0; y < FinalImg->GetHeight(); y++) {
-        for (uint32_t x = 0; x < FinalImg->GetWidth(); x++) {
+    for (uint32_t y = start_y; y < end_y; y++) {
+        for (uint32_t x = 0; x < renderer.FinalImg->GetWidth(); x++) {
             color pixel_color(0, 0, 0);
-            for (int sample = 0; sample < samples_per_pixel; sample++) {
-                vec3 offset = sample_square() * 0.001; // Further reduce the offset scale
-                const glm::vec3& rayDir = camera.GetRayDirections()[x + y * FinalImg->GetWidth()];
-               // vec3 myRayDir = unit_vector(rayDir); // Normalize the direction
-
-                vec3 myRayDir = unit_vector(rayDir + offset); // Normalize the direction
+            for (int sample = 0; sample < renderer.samples_per_pixel; sample++) {
+                vec3 offset = sample_square() * 0.001;
+                const glm::vec3& rayDir = camera.GetRayDirections()[x + y * renderer.FinalImg->GetWidth()];
+                vec3 myRayDir = unit_vector(rayDir + offset);
                 ray cameraRay(myCameraPosition, myRayDir);
-                int    max_depth = 10;   // Maximum number of ray bounces into scene
-                pixel_color += ray_color(cameraRay,max_depth,world);
+                pixel_color += ray_color(cameraRay, renderer.max_depth, world);
             }
 
-            // Average the color and apply gamma correction
-            pixel_color /= samples_per_pixel;
-            //pixel_color = color(sqrt(pixel_color.x()), sqrt(pixel_color.y()), sqrt(pixel_color.z()));
-
-            imgData[x + y * FinalImg->GetWidth()] = write_color(pixel_color);
+            pixel_color /= renderer.samples_per_pixel;
+            renderer.imgData[x + y * renderer.FinalImg->GetWidth()] = write_color(pixel_color);
         }
     }
+}
+
+void Renderer::Render(const Camera& camera, const hittable& world) {
+    uint32_t height = FinalImg->GetHeight();
+    uint32_t num_threads = std::thread::hardware_concurrency();
+    uint32_t rows_per_thread = height / num_threads;
+
+    std::vector<std::thread> threads;
+
+    for (uint32_t i = 0; i < num_threads; ++i) {
+        uint32_t start_y = i * rows_per_thread;
+        uint32_t end_y = (i == num_threads - 1) ? height : start_y + rows_per_thread;
+        threads.emplace_back(&Renderer::render_tile, this, std::ref(*this), std::ref(camera), std::ref(world), start_y, end_y);
+    }
+
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
     FinalImg->SetData(imgData);
 }
 
-
-
 uint32_t Renderer::TraceRay(const ray& ray, const hittable& world) {
-    // Get the color from the ray
-    color pixel_color = ray_color(ray,max_depth, world);
-
-    // Convert the color to RGBA format
+    color pixel_color = ray_color(ray, max_depth, world);
     return write_color(pixel_color);
 }
 
@@ -98,5 +103,3 @@ void Renderer::OnResize(uint32_t width, uint32_t height) {
     delete[] imgData;
     imgData = new uint32_t[width * height];
 }
-
-

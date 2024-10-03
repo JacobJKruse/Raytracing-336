@@ -23,7 +23,8 @@ public:
 
 private:
     uint32_t TraceRay(const ray& ray, const hittable& world);
-    
+    void Renderer::render_tile(Renderer& renderer, const Camera& camera, const hittable& world, uint32_t start_y, uint32_t end_y);
+
     // Color scale factor for a sum of pixel samples
     std::shared_ptr<Walnut::Image> FinalImg;
     uint32_t* imgData = nullptr;
