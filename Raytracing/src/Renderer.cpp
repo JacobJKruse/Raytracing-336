@@ -3,6 +3,7 @@
 #include <future>
 #include "Renderer.h"
 #include "Walnut/Random.h"
+#include "ThreadPool.h"
 
 double hit_sphere(const point3& center, double radius, const ray& r) {
     vec3 oc = center - r.origin();
@@ -72,23 +73,22 @@ void Renderer::Render(const Camera& camera, const hittable& world) {
         num_threads = 1;
     }
 
+    ThreadPool threadPool(num_threads);
     uint32_t rows_per_thread = height / num_threads;
-
-    std::vector<std::thread> threads;
 
     for (uint32_t i = 0; i < num_threads; ++i) {
         uint32_t start_y = i * rows_per_thread;
         uint32_t end_y = (i == num_threads - 1) ? height : start_y + rows_per_thread;
-        threads.emplace_back(&Renderer::render_tile, this, std::ref(*this), std::ref(camera), std::ref(world), start_y, end_y);
+        threadPool.enqueue([this, &camera, &world, start_y, end_y] {
+            render_tile(*this, camera, world, start_y, end_y);
+            });
     }
 
-    for (auto& thread : threads) {
-        thread.join();
-    }
+    // Wait for all tasks to complete
+    threadPool.~ThreadPool();
 
     FinalImg->SetData(imgData);
 }
-
 
 uint32_t Renderer::TraceRay(const ray& ray, const hittable& world) {
     color pixel_color = ray_color(ray, max_depth, world);
