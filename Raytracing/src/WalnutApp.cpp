@@ -72,6 +72,12 @@ public:
 				// Update the radius if it has been changed
 				prop.radius = updatedRad;
 			}
+
+			glm::vec3 objColor = to_glm(get_object_color(m_Scene, i));
+			if (ImGui::ColorEdit3("Color", glm::value_ptr(objColor))) {
+				change_object_color(m_Scene, i, from_glm(objColor));
+			}
+
 			ImGui::PopID();
 			
 		

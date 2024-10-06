@@ -47,3 +47,33 @@ Scene create_scene() {
 
     return scene;
 }
+
+
+
+
+void change_object_color(Scene& scene, size_t object_index, const color& new_color) {
+    if (object_index < scene.object_properties.size()) {
+        auto& mat_ptr = scene.object_properties[object_index].mat_ptr;
+        if (auto lambertian_mat = std::dynamic_pointer_cast<lambertian>(mat_ptr)) {
+            lambertian_mat->albedo = new_color;
+        }
+        else if (auto metal_mat = std::dynamic_pointer_cast<metal>(mat_ptr)) {
+            metal_mat->albedo = new_color;
+        }
+        // Add more checks for other material types if needed
+    }
+}
+
+color get_object_color(const Scene& scene, size_t object_index) {
+    if (object_index < scene.object_properties.size()) {
+        auto& mat_ptr = scene.object_properties[object_index].mat_ptr;
+        if (auto lambertian_mat = std::dynamic_pointer_cast<lambertian>(mat_ptr)) {
+            return lambertian_mat->albedo;
+        }
+        else if (auto metal_mat = std::dynamic_pointer_cast<metal>(mat_ptr)) {
+            return metal_mat->albedo;
+        }
+        // Add more checks for other material types if needed
+    }
+    return color(0.0, 0.0, 0.0); // Default color if not found
+}
